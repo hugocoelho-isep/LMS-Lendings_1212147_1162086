@@ -10,7 +10,7 @@ DockerfileWithPackaging (inclui mvn package)
 
 Running:
 > docker compose -f docker-compose-rabbitmq+postgres.yml up -d
->  p
+> docker exec -it postgres_in_lms_network psql -U postgres
     psql (16.3 (Debian 16.3-1.pgdg120+1))
     Type "help" for help.
 
@@ -33,3 +33,25 @@ Running:
     (7 rows)
     postgres=# exit
 > docker compose up
+
+
+
+Using docker stack
+
+Create a network:
+> docker network create --driver=overlay --attachable lms_overlay_attachable_network
+
+Init:
+> docker swarm init
+
+Deploy:
+> docker stack deploy -c docker-stack.yml lmslendings
+
+Remove:
+> docker stack rm lmslendings
+
+Script to create databases and lmslendings service:
+> ./run.sh
+
+Script to remove databases and lmslendings service:
+> ./shutdown.sh

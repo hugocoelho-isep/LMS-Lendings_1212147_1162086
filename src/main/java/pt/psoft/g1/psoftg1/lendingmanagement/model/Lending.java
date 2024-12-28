@@ -55,6 +55,7 @@ public class Lending {
     @NotNull
     @Getter
     @ManyToOne(fetch=FetchType.EAGER, optional = false)
+    @JoinColumn(name = "book_id", nullable = false)
     private Book book;
 
     /**
@@ -63,6 +64,7 @@ public class Lending {
     @NotNull
     @Getter
     @ManyToOne(fetch=FetchType.EAGER, optional = false)
+    @JoinColumn(name = "reader_details_id", nullable = false)
     private ReaderDetails readerDetails;
 
     /**
@@ -106,6 +108,7 @@ public class Lending {
      * */
     @Size(min = 0, max = 1024)
     @Column(length = 1024)
+    @Getter
     private String commentary = null;
 
     @Transient
@@ -146,6 +149,33 @@ public class Lending {
     }
 
     /**
+     * Constructs a new {@code Lending} object to be persisted in the database.
+     * <p>
+     * Sets {@code startDate} as the current date, and {@code limitDate} as the current date plus the
+     * business specified number of days a reader can take to return the book ({@link Lending#MAX_DAYS_PER_LENDING}).
+     *
+     * @param       book {@code Book} object, which should be retrieved from the database.
+     * @param       readerDetails {@code Reader} object, which should be retrieved from the database.
+     * @param       lendingNumber lendingNumber
+     * @throws      NullPointerException if any of the arguments is {@code null}
+     * */
+    public Lending(Book book, ReaderDetails readerDetails, String lendingNumber, int lendingDuration, int fineValuePerDayInCents){
+        try {
+            this.book = Objects.requireNonNull(book);
+            this.readerDetails = Objects.requireNonNull(readerDetails);
+        }catch (NullPointerException e){
+            throw new IllegalArgumentException("Null objects passed to lending");
+        }
+        this.lendingNumber = new LendingNumber(lendingNumber);
+        this.startDate = LocalDate.now();
+        this.limitDate = LocalDate.now().plusDays(lendingDuration);
+        this.returnedDate = null;
+        this.fineValuePerDayInCents = fineValuePerDayInCents;
+        setDaysUntilReturn();
+        setDaysOverdue();
+    }
+
+    /**
      * <p>Sets {@code commentary} and the current date as {@code returnedDate}.
      * <p>If {@code returnedDate} is after {@code limitDate}, fine is applied with corresponding value.
      *
@@ -168,6 +198,26 @@ public class Lending {
 
         this.returnedDate = LocalDate.now();
     }
+
+
+    public void setReturned(final long desiredVersion, final String commentary, final LocalDate returnDate){
+
+        System.out.println("desiredVersion: " + desiredVersion);
+        System.out.println("currentVersion: " + this.version);
+
+        if (this.returnedDate != null)
+            throw new IllegalArgumentException("book has already been returned!");
+
+        // check current version
+        if (this.version != desiredVersion)
+            throw new StaleObjectStateException("Object was already modified by another user", this.pk);
+
+        if(commentary != null)
+            this.commentary = commentary;
+
+        this.returnedDate = returnDate;
+    }
+
 
     /**
      * <p>Returns the number of days that the lending is/was past its due date</p>

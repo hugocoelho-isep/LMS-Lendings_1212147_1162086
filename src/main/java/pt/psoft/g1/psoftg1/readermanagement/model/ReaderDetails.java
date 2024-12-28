@@ -65,7 +65,7 @@ public class ReaderDetails extends EntityWithPhoto {
 //    @ManyToMany
 //    private List<Genre> interestList;
 
-    public ReaderDetails(int readerNumber, /*Reader reader,*/ String birthDate, String phoneNumber, boolean gdpr, boolean marketing, boolean thirdParty, String photoURI/*, List<Genre> interestList*/) {
+    public ReaderDetails(int readerNumber, /*Reader reader,*/ String birthDate, String phoneNumber, boolean gdpr, boolean marketing, boolean thirdParty, String photoURI/*, List<Genre> interestList*/, String username) {
 //        if(reader == null || phoneNumber == null) {
 //            throw new IllegalArgumentException("Provided argument resolves to null object");
 //        }
@@ -84,6 +84,7 @@ public class ReaderDetails extends EntityWithPhoto {
         setPhotoInternal(photoURI);
         setMarketingConsent(marketing);
         setThirdPartySharingConsent(thirdParty);
+        setUsername(username);
         //setInterestList(interestList);
     }
 
