@@ -7,7 +7,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
 
-
 /**
  * Based on https://www.baeldung.com/spring-5-webclient
  */
@@ -22,12 +21,8 @@ public class ApiNinjasConfig {
     @Value("${my.ninjas-key}")
     private String key;
 
-
     @Bean
     public WebClient webClient() {
-        return WebClient.builder()
-                .baseUrl("https://api.api-ninjas.com/" + VERSION)
-                .defaultHeader(HEADER, key)
-                .build();
+        return WebClient.builder().baseUrl("https://api.api-ninjas.com/" + VERSION).defaultHeader(HEADER, key).build();
     }
 }

@@ -1,16 +1,20 @@
 package pt.psoft.g1.psoftg1.lendingmanagement.services;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Service;
 import pt.psoft.g1.psoftg1.bookmanagement.repositories.BookRepository;
 import pt.psoft.g1.psoftg1.exceptions.LendingForbiddenException;
 import pt.psoft.g1.psoftg1.exceptions.NotFoundException;
+import pt.psoft.g1.psoftg1.lendingmanagement.api.LendingViewAMQP;
 import pt.psoft.g1.psoftg1.lendingmanagement.model.Fine;
 import pt.psoft.g1.psoftg1.lendingmanagement.model.Lending;
+import pt.psoft.g1.psoftg1.lendingmanagement.publishers.LendingEventsPublisher;
 import pt.psoft.g1.psoftg1.lendingmanagement.repositories.FineRepository;
 import pt.psoft.g1.psoftg1.lendingmanagement.repositories.LendingRepository;
+import pt.psoft.g1.psoftg1.readermanagement.model.ReaderDetails;
 import pt.psoft.g1.psoftg1.readermanagement.repositories.ReaderRepository;
 import pt.psoft.g1.psoftg1.shared.services.Page;
 
@@ -28,6 +32,8 @@ public class LendingServiceImpl implements LendingService{
     private final FineRepository fineRepository;
     private final BookRepository bookRepository;
     private final ReaderRepository readerRepository;
+
+    private final LendingEventsPublisher lendingEventsPublisher;
 
     @Value("${lendingDurationInDays}")
     private int lendingDurationInDays;
@@ -79,8 +85,33 @@ public class LendingServiceImpl implements LendingService{
         int seq = lendingRepository.getCountFromCurrentYear()+1;
         final Lending l = new Lending(b,r,seq, lendingDurationInDays, fineValuePerDayInCents );
 
+        Lending createdLending = lendingRepository.save(l);
+
+        if( createdLending!=null ) {
+            lendingEventsPublisher.sendLendingCreated(createdLending);
+        }
+
+        return createdLending;
+    }
+
+    @Override
+    public Lending create(LendingViewAMQP lendingViewAMQP) {
+
+        lendingRepository.findByLendingNumber(lendingViewAMQP.getLendingNumber())
+                .ifPresent(lending -> {
+                    throw new LendingForbiddenException("Lending with this number already exists");
+                });
+
+        final var b = bookRepository.findByIsbn(lendingViewAMQP.getIsbn())
+                .orElseThrow(() -> new NotFoundException("Book not found"));
+        final var r = readerRepository.findByReaderNumber(lendingViewAMQP.getReaderNumber())
+                .orElseThrow(() -> new NotFoundException("Reader not found"));
+
+        final Lending l = new Lending(b,r,lendingViewAMQP.getLendingNumber(), lendingDurationInDays, fineValuePerDayInCents );
+
         return lendingRepository.save(l);
     }
+
 
     @Override
     public Lending setReturned(final String lendingNumber, final SetLendingReturnedRequest resource, final long desiredVersion) {
@@ -89,6 +120,27 @@ public class LendingServiceImpl implements LendingService{
                 .orElseThrow(() -> new NotFoundException("Cannot update lending with this lending number"));
 
         lending.setReturned(desiredVersion, resource.getCommentary());
+
+        if(lending.getDaysDelayed() > 0){
+            final var fine = new Fine(lending);
+            fineRepository.save(fine);
+        }
+
+        Lending updatedLending = lendingRepository.save(lending);
+
+        if( updatedLending!=null ) {
+            lendingEventsPublisher.sendLendingUpdated(updatedLending, desiredVersion);
+        }
+
+        return updatedLending;
+    }
+
+    @Override
+    public Lending setReturned(LendingViewAMQP lendingViewAMQP) {
+        var lending = lendingRepository.findByLendingNumber(lendingViewAMQP.getLendingNumber())
+                .orElseThrow(() -> new NotFoundException("Cannot update lending with this lending number"));
+
+        lending.setReturned(lendingViewAMQP.getVersion(), lendingViewAMQP.getCommentary(), lendingViewAMQP.getReturnedDate());
 
         if(lending.getDaysDelayed() > 0){
             final var fine = new Fine(lending);
