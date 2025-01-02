@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import pt.psoft.g1.psoftg1.exceptions.ConflictException;
 import pt.psoft.g1.psoftg1.exceptions.NotFoundException;
+import pt.psoft.g1.psoftg1.readermanagement.api.ReaderViewAMQP;
 import pt.psoft.g1.psoftg1.readermanagement.model.ReaderDetails;
 import pt.psoft.g1.psoftg1.readermanagement.repositories.ReaderRepository;
 import pt.psoft.g1.psoftg1.shared.repositories.ForbiddenNameRepository;
@@ -24,7 +25,6 @@ import org.springframework.data.domain.Pageable;
 @RequiredArgsConstructor
 public class ReaderServiceImpl implements ReaderService {
     private final ReaderRepository readerRepo;
-    private final ReaderMapper readerMapper;
     private final ForbiddenNameRepository forbiddenNameRepository;
 
 
@@ -74,6 +74,35 @@ public class ReaderServiceImpl implements ReaderService {
     @Override
     public Optional<ReaderDetails> findByReaderNumber(String readerNumber) {
         return this.readerRepo.findByReaderNumber(readerNumber);
+    }
+
+    @Override
+    public ReaderDetails create(ReaderViewAMQP readerViewAMQP) {
+        if (readerRepo.findByUsername(readerViewAMQP.getUsername()).isPresent()) {
+            throw new ConflictException("Username already exists!");
+        }
+
+        ReaderDetails rd = new ReaderDetails(
+                readerViewAMQP.getReaderNumber(),
+                readerViewAMQP.getBirthDate(),
+                readerViewAMQP.getPhoneNumber(),
+                readerViewAMQP.isGdpr(),
+                readerViewAMQP.isMarketing(),
+                readerViewAMQP.isThirdParty(),
+                readerViewAMQP.getPhotoURI(),
+                readerViewAMQP.getUsername());
+
+        return readerRepo.save(rd);
+    }
+
+    @Override
+    public ReaderDetails update(ReaderViewAMQP readerViewAMQP) {
+        final ReaderDetails readerDetails = readerRepo.findByUserId(readerViewAMQP.getUserId())
+        .orElseThrow(() -> new NotFoundException("Cannot find reader"));
+
+        readerDetails.applyPatch(readerViewAMQP);
+
+        return readerRepo.save(readerDetails);
     }
 
     @Override

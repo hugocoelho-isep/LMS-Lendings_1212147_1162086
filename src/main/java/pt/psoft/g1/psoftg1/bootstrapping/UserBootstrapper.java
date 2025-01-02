@@ -76,7 +76,8 @@ public class UserBootstrapper implements CommandLineRunner {
                         true,
                         true,
                         "readerPhotoTest.jpg",
-                        "manuel@gmail.com");
+                        "manuel@gmail.com",
+                        1);
                 readerRepository.save(r1);
             }
 //        }
@@ -102,7 +103,7 @@ public class UserBootstrapper implements CommandLineRunner {
                         false,
                         false,
                         null,
-                        "joao@gmail.com");
+                        "joao@gmail.com",2);
                 readerRepository.save(r2);
             }
 //        }
@@ -125,7 +126,8 @@ public class UserBootstrapper implements CommandLineRunner {
                         false,
                         true,
                         null,
-                        "pedro@gmail.com");
+                        "pedro@gmail.com",
+                        3);
                 readerRepository.save(r3);
             }
 //        }
@@ -148,7 +150,8 @@ public class UserBootstrapper implements CommandLineRunner {
                         false,
                         true,
                         null,
-                        "catarina@gmail.com");
+                        "catarina@gmail.com",
+                        4);
                 readerRepository.save(r4);
             }
 //        }
@@ -171,7 +174,8 @@ public class UserBootstrapper implements CommandLineRunner {
                         false,
                         true,
                         null,
-                        "marcelo@gmail.com");
+                        "marcelo@gmail.com",
+                        5);
                 readerRepository.save(r5);
             }
 //        }
@@ -194,7 +198,8 @@ public class UserBootstrapper implements CommandLineRunner {
                         false,
                         true,
                         null,
-                        "luis@gmail.com");
+                        "luis@gmail.com",
+                        6);
                 readerRepository.save(r6);
             }
 //        }
@@ -217,7 +222,8 @@ public class UserBootstrapper implements CommandLineRunner {
                         false,
                         true,
                         null,
-                        "antonio@gmail.com");
+                        "antonio@gmail.com",
+                        7);
                 readerRepository.save(r7);
             }
 //        }
@@ -241,7 +247,8 @@ public class UserBootstrapper implements CommandLineRunner {
                         false,
                         true,
                         null,
-                        "andre@gmail.com");
+                        "andre@gmail.com",
+                        8);
                 readerRepository.save(r8);
             }
 //        }
