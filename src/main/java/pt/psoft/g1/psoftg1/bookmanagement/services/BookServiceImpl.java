@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 //import pt.psoft.g1.psoftg1.authormanagement.model.Author;
 //import pt.psoft.g1.psoftg1.authormanagement.repositories.AuthorRepository;
+import pt.psoft.g1.psoftg1.bookmanagement.api.BookViewAMQP;
 import pt.psoft.g1.psoftg1.bookmanagement.model.Book;
 import pt.psoft.g1.psoftg1.bookmanagement.repositories.BookRepository;
 import pt.psoft.g1.psoftg1.exceptions.ConflictException;
@@ -53,6 +54,25 @@ public class BookServiceImpl implements BookService {
         return bookRepository.save(newBook);
 	}
 
+	@Override
+	public Book create(BookViewAMQP bookViewAMQP) {
+
+		final String isbn = bookViewAMQP.getIsbn();
+		final String description = bookViewAMQP.getDescription();
+		final String title = bookViewAMQP.getTitle();
+		final String photoURI = null;
+		final String genre = bookViewAMQP.getGenre();
+		final List<Long> authorIds = bookViewAMQP.getAuthorIds();
+
+		if (bookRepository.findByIsbn(isbn).isPresent()) {
+			throw new ConflictException("Book with ISBN " + isbn + " already exists");
+		}
+
+		Book newBook = new Book(isbn, title, description, photoURI);
+
+		return bookRepository.save(newBook);
+	}
+
 
 	@Override
 	public Book update(UpdateBookRequest request, String currentVersion) {
@@ -73,6 +93,21 @@ public class BookServiceImpl implements BookService {
 
 
 		return book;
+	}
+
+	@Override
+	public Book update(BookViewAMQP bookViewAMQP) {
+		final Long version = bookViewAMQP.getVersion();
+		final String isbn = bookViewAMQP.getIsbn();
+		final String description = bookViewAMQP.getDescription();
+		final String title = bookViewAMQP.getTitle();
+		final String photoURI = null;
+
+		var book = findByIsbn(isbn);
+
+		book.applyPatch(version, title, description, photoURI);
+
+		return bookRepository.save(book);
 	}
 
 	@Override

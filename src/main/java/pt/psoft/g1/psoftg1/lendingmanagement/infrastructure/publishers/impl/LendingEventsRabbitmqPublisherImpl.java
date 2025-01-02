@@ -6,11 +6,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import pt.psoft.g1.psoftg1.lendingmanagement.api.LendingViewAMQP;
 import pt.psoft.g1.psoftg1.lendingmanagement.api.LendingViewAMQPMapper;
 import pt.psoft.g1.psoftg1.lendingmanagement.model.Lending;
-import pt.psoft.g1.psoftg1.lendingmanagement.model.LendingEvents;
+import pt.psoft.g1.psoftg1.shared.model.LendingEvents;
 import pt.psoft.g1.psoftg1.lendingmanagement.publishers.LendingEventsPublisher;
 
 @Service
@@ -20,6 +21,7 @@ public class LendingEventsRabbitmqPublisherImpl implements LendingEventsPublishe
     @Autowired
     private RabbitTemplate template;
     @Autowired
+    @Qualifier("directExchangeLendings")
     private DirectExchange direct;
     private final LendingViewAMQPMapper lendingViewAMQPMapper;
 

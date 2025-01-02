@@ -122,4 +122,20 @@ public class Book extends EntityWithPhoto {
     public String getIsbn(){
         return this.isbn.toString();
     }
+
+    public void applyPatch(Long version, String title, String description, String photoURI) {
+        if (!Objects.equals(this.version, version))
+            throw new StaleObjectStateException("Object was already modified by another user", this.pk);
+
+        if(title != null) {
+            setTitle(title);
+        }
+
+        if(description != null) {
+            setDescription(description);
+        }
+
+        if(photoURI != null)
+            setPhotoInternal(photoURI);
+    }
 }
