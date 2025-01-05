@@ -1,0 +1,138 @@
+pipeline {
+    agent any
+
+    environment {
+
+        MAVEN_HOME = '/usr/share/maven'
+        JAVA_HOME = '/usr/lib/jvm/java-21-openjdk-amd64'
+
+        GITHUB_URL = 'https://github.com/hugocoelho-isep/LMS-Lendings_1212147_1162086.git'
+        GITHUB_BRANCH = 'main'
+        GITHUB_CREDENTIALS = 'github-credential'
+
+
+        DOCKER_IMAGE = 'lmslendings:latest'
+        DOCKERHUB_CREDENTIALS = 'dockerhub-credentials'
+        DOCKER_USERNAME = 'hugocoelhoisep'
+    }
+
+    tools {
+        jdk 'JDK 21'
+        maven 'Maven'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git url: "${GITHUB_URL}", branch: "${GITHUB_BRANCH}", credentialsId: "${GITHUB_CREDENTIALS}"
+                echo 'Repository checked out successfully.'
+            }
+        }
+
+        stage('Clean') {
+            steps {
+                script {
+                    sh 'mvn clean package -DskipTests'
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    // Build the Docker image using the Dockerfile
+                    sh 'docker build -t ${DOCKER_IMAGE} .'
+                }
+            }
+        }
+
+        stage('Login to Docker Hub') {
+            steps {
+                script {
+                    catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+
+                        withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                            sh '''
+                            echo "Logging in to Docker Hub..."
+                            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+
+                            echo "Tagging the image..."
+                            docker tag ${DOCKER_IMAGE} ${DOCKER_USERNAME}/${DOCKER_IMAGE}
+
+                            echo "Pushing the image..."
+                            docker push ${DOCKER_USERNAME}/${DOCKER_IMAGE}
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Notify User for Approval') {
+            steps {
+                emailext (
+                    subject: "LMSLendings Jenkins Local Pipeline - Deployment Ready",
+                    body: """The LMSLendings local pipeline has successfully built and pushed the Docker image.
+                            Please approve the deployment in Jenkins to continue.""",
+                    to: '1162086@isep.ipp.pt'
+                )
+            }
+        }
+
+        stage('Wait for Approval') {
+            steps {
+                script {
+                    catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                        echo "The pipeline is waiting for your approval. Please click on the link below to proceed or abort the deployment."
+                        def userInput = input(
+                            message: "Do you want to proceed with the deployment?",
+                            parameters: [
+                                choice(name: 'Approve Deployment', choices: ['Yes', 'No'], description: 'Select Yes to continue or No to abort.')
+                            ]
+                        )
+                        if (userInput == 'No') {
+                            currentBuild.result = 'ABORTED'
+                            error("Deployment aborted by user.")
+
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                script {
+                    catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+
+                        def scaleCount = input(
+                            message: 'How many instances would you like to scale to?',
+                            parameters: [
+                                choice(name: 'COUNT', choices: ['1', '2', '3', '4', '5'], description: 'Number of instances per service')
+                            ]
+                        )
+                        echo "Scaling services to ${scaleCount} instances each..."
+                        // Add execute permissions to the script
+                        sh 'chmod +x ./run-vm.sh'
+
+                        // Run the script with bash
+                        sh "bash ./run-vm.sh ${scaleCount}"
+                    }
+                }
+            }
+        }
+
+    }
+
+
+    post {
+        success {
+            // Actions to take when the pipeline succeeds
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            // Actions to take when the pipeline fails
+            echo 'Pipeline failed!'
+        }
+    }
+}
