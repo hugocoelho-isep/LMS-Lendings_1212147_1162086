@@ -28,6 +28,8 @@ public class LendingViewAMQP {
 
     private LocalDate returnedDate;
 
+    private Boolean isRecommended;
+
 }
 
 /*>

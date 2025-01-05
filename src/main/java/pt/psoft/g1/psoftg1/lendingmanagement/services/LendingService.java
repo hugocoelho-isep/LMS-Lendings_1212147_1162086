@@ -23,6 +23,7 @@ public interface LendingService {
     Lending create(CreateLendingRequest resource); //No ID passed, as it is auto generated
     Lending create(LendingViewAMQP lendingViewAMQP);
     Lending setReturned(String id, SetLendingReturnedRequest resource, long desiredVersion);
+    Lending setReturned(String id, SetLendingReturnedWithRecommendationRequest resource, long desiredVersion);
     Lending setReturned(LendingViewAMQP lendingViewAMQP);
     Double getAverageDuration();
     List<Lending> getOverdue(Page page);
@@ -30,4 +31,5 @@ public interface LendingService {
     List<Lending> searchLendings(Page page, SearchLendingQuery request);
 
 
+    Lending roolbackReturned(LendingViewAMQP lendingViewAMQP);
 }

@@ -61,4 +61,27 @@ public class LendingEventRabbitmqReceiver {
             System.out.println(" [x] Exception receiving lending event from AMQP: '" + ex.getMessage() + "'");
         }
     }
+
+    @RabbitListener(queues = "#{autoDeleteQueue_Lending_Recommendation_Failed.name}")
+    public void receiveLendingRecommendationFailed(Message msg) {
+
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.registerModule(new JavaTimeModule());
+
+            String jsonReceived = new String(msg.getBody(), StandardCharsets.UTF_8);
+            LendingViewAMQP lendingViewAMQP = objectMapper.readValue(jsonReceived, LendingViewAMQP.class);
+
+            System.out.println(" [x] Received Recommendation failed to create by AMQP: " + msg + ". Rollback lending.");
+            try {
+                lendingService.roolbackReturned(lendingViewAMQP);
+                System.out.println(" [x] Lending rollback from AMQP: " + msg + ".");
+            } catch (Exception e) {
+                System.out.println(" [x] Lending does not exists or wrong version. Nothing changed.");
+            }
+        }
+        catch(Exception ex) {
+            System.out.println(" [x] Exception receiving lending rollback event from AMQP: '" + ex.getMessage() + "'");
+        }
+    }
 }
