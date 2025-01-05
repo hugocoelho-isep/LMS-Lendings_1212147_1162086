@@ -17,10 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pt.psoft.g1.psoftg1.exceptions.NotFoundException;
 import pt.psoft.g1.psoftg1.lendingmanagement.model.Lending;
-import pt.psoft.g1.psoftg1.lendingmanagement.services.CreateLendingRequest;
-import pt.psoft.g1.psoftg1.lendingmanagement.services.LendingService;
-import pt.psoft.g1.psoftg1.lendingmanagement.services.SearchLendingQuery;
-import pt.psoft.g1.psoftg1.lendingmanagement.services.SetLendingReturnedRequest;
+import pt.psoft.g1.psoftg1.lendingmanagement.services.*;
 import pt.psoft.g1.psoftg1.readermanagement.model.ReaderDetails;
 import pt.psoft.g1.psoftg1.readermanagement.services.ReaderService;
 import pt.psoft.g1.psoftg1.shared.api.ListResponse;
@@ -116,6 +113,51 @@ public class LendingController {
                 @Parameter(description = "The sequential component of the Lending to find")
                 final Integer seq,
             @Valid @RequestBody final SetLendingReturnedRequest resource) {
+        final String ifMatchValue = request.getHeader(ConcurrencyService.IF_MATCH);
+        if (ifMatchValue == null || ifMatchValue.isEmpty() || ifMatchValue.equals("null")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "You must issue a conditional PATCH using 'if-match'");
+        }
+        String ln = year + "/" + seq;
+        final var maybeLending = lendingService.findByLendingNumber(ln)
+                .orElseThrow(() -> new NotFoundException(Lending.class, ln));
+
+        if (authentication == null || !(authentication.getPrincipal() instanceof Jwt jwt)) {
+            throw new AccessDeniedException("User is not logged in");
+        }
+
+        String role = jwt.getClaimAsString("roles");
+        String username = jwt.getClaimAsString("sub").split(",")[1];
+
+
+        final var loggedReaderDetails = readerService.findByUsername(username)
+                .orElseThrow(() -> new NotFoundException(ReaderDetails.class, username));
+
+        //if logged Reader matches the one associated with the lending, skip ahead
+        if (!Objects.equals(loggedReaderDetails.getReaderNumber(), maybeLending.getReaderDetails().getReaderNumber())) {
+            throw new AccessDeniedException("Reader does not have permission to edit this lending");
+        }
+
+        final var lending = lendingService.setReturned(ln, resource, concurrencyService.getVersionFromIfMatchHeader(ifMatchValue));
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/hal+json"))
+                .eTag(Long.toString(lending.getVersion()))
+                .body(lendingViewMapper.toLendingView(lending));
+    }
+
+    @Operation(summary = "Sets a lending as returned")
+    @PatchMapping(value = "/{year}/{seq}/withRecommendation")
+    public ResponseEntity<LendingView> setLendingReturnedWithRecommendation(
+            final WebRequest request,
+            final Authentication authentication,
+            @PathVariable("year")
+            @Parameter(description = "The year component of the Lending to find")
+            final Integer year,
+            @PathVariable("seq")
+            @Parameter(description = "The sequential component of the Lending to find")
+            final Integer seq,
+            @Valid @RequestBody final SetLendingReturnedWithRecommendationRequest resource) {
         final String ifMatchValue = request.getHeader(ConcurrencyService.IF_MATCH);
         if (ifMatchValue == null || ifMatchValue.isEmpty() || ifMatchValue.equals("null")) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,

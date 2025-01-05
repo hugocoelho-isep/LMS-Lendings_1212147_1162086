@@ -48,6 +48,17 @@ public class RabbitmqClientConfig {
             return new AnonymousQueue();
         }
 
+        @Bean(name = "autoDeleteQueue_Lending_With_Recommendation")
+        public Queue autoDeleteQueue_Lending_With_Recommendation() {
+            System.out.println("autoDeleteQueue_Lending_With_Recommendation updated!");
+            return new AnonymousQueue();
+        }
+
+        @Bean(name = "autoDeleteQueue_Lending_Recommendation_Failed")
+        public Queue autoDeleteQueue_Lending_Recommendation_Failed() {
+            return new AnonymousQueue();
+        }
+
 
         @Bean
         public Binding binding1(@Qualifier("directExchangeLendings") DirectExchange direct,
@@ -63,6 +74,22 @@ public class RabbitmqClientConfig {
             return BindingBuilder.bind(autoDeleteQueue_Lending_Updated)
                     .to(direct)
                     .with(LendingEvents.LENDING_UPDATED);
+        }
+
+        @Bean
+        public Binding binding3(@Qualifier("directExchangeLendings") DirectExchange direct,
+                                Queue autoDeleteQueue_Lending_With_Recommendation) {
+            return BindingBuilder.bind(autoDeleteQueue_Lending_With_Recommendation)
+                    .to(direct)
+                    .with(LendingEvents.LENDING_UPDATED_WITH_RECOMMENDATION);
+        }
+
+        @Bean
+        public Binding binding10(@Qualifier("directExchangeLendings") DirectExchange direct,
+                                 Queue autoDeleteQueue_Lending_Recommendation_Failed) {
+            return BindingBuilder.bind(autoDeleteQueue_Lending_Recommendation_Failed)
+                    .to(direct)
+                    .with(LendingEvents.LENDING_RECOMMENDATION_FAILED);
         }
 
         @Bean(name = "LendingEventRabbitmqReceiver")

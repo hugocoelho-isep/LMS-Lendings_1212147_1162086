@@ -136,6 +136,29 @@ public class LendingServiceImpl implements LendingService{
     }
 
     @Override
+    public Lending setReturned(final String lendingNumber, SetLendingReturnedWithRecommendationRequest resource,final long desiredVersion) {
+        var lending = lendingRepository.findByLendingNumber(lendingNumber)
+                .orElseThrow(() -> new NotFoundException("Cannot update lending with this lending number"));
+
+
+        lending.setReturned(desiredVersion, resource.getCommentary());
+
+        if(lending.getDaysDelayed() > 0){
+            final var fine = new Fine(lending);
+            fineRepository.save(fine);
+        }
+
+        Lending updatedLending = lendingRepository.save(lending);
+
+        if( updatedLending!=null ) {
+            lendingEventsPublisher.sendLendingUpdated(updatedLending, desiredVersion);
+            lendingEventsPublisher.sendLendingWithCommentary(updatedLending, desiredVersion, resource);
+        }
+
+        return updatedLending;
+    }
+
+    @Override
     public Lending setReturned(LendingViewAMQP lendingViewAMQP) {
         var lending = lendingRepository.findByLendingNumber(lendingViewAMQP.getLendingNumber())
                 .orElseThrow(() -> new NotFoundException("Cannot update lending with this lending number"));
@@ -203,6 +226,15 @@ public class LendingServiceImpl implements LendingService{
 
     }
 
+    @Override
+    public Lending roolbackReturned(LendingViewAMQP lendingViewAMQP) {
 
+        var lending = lendingRepository.findByLendingNumber(lendingViewAMQP.getLendingNumber())
+                .orElseThrow(() -> new NotFoundException("Cannot update lending with this lending number"));
 
+        lending.rollbackReturned(lendingViewAMQP.getVersion());
+
+        return lendingRepository.save(lending);
+
+    }
 }

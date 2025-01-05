@@ -218,6 +218,12 @@ public class Lending {
         this.returnedDate = returnDate;
     }
 
+    public void rollbackReturned(long version){
+        this.version = version;
+        this.commentary = null;
+        this.returnedDate = null;
+    }
+
 
     /**
      * <p>Returns the number of days that the lending is/was past its due date</p>
