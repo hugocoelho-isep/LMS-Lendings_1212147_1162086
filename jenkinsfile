@@ -116,7 +116,7 @@ pipeline {
                         sh 'chmod +x ./run-vm.sh'
 
                         // Run the script with bash
-                        sh "bash ./run-vm.sh ${scaleCount}"
+                        sh "bash ./run-vm.sh 2"
                     }
                 }
             }
