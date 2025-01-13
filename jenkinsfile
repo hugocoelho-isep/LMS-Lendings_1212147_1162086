@@ -37,6 +37,14 @@ pipeline {
             }
         }
 
+        stage('Running Tests') {
+            steps {
+                script {
+                    sh 'mvn test'
+                }
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 script {
@@ -104,18 +112,34 @@ pipeline {
             steps {
                 script {
                     catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                        // Add execute permissions to the script
+                        sh 'chmod +x ./run-vm.sh'
 
+                        // Run the script with bash
+                        sh "bash ./run-vm.sh ${scaleCount}"
+                    }
+                }
+            }
+        }
+
+        stage('Scale Up and Down Services') {
+            steps {
+                script {
+                    catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                        // Solicita o número de instâncias ao usuário
                         def scaleCount = input(
                             message: 'How many instances would you like to scale to?',
                             parameters: [
                                 choice(name: 'COUNT', choices: ['1', '2', '3', '4', '5'], description: 'Number of instances per service')
                             ]
                         )
+
                         echo "Scaling services to ${scaleCount} instances each..."
+
                         // Add execute permissions to the script
                         sh 'chmod +x ./run-vm.sh'
 
-                        // Run the script with bash
+                        // Executa o script com o número de instâncias
                         sh "bash ./run-vm.sh ${scaleCount}"
                     }
                 }

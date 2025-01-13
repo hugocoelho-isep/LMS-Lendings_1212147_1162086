@@ -70,9 +70,9 @@ else
     --env spring.datasource.url=jdbc:postgresql://lendings_db_{{.Task.Slot}}:5432/postgres \
     --env spring.datasource.username=postgres \
     --env spring.datasource.password=password \
-    --env file.upload-dir=/home/hugo_hec/docker/uploads-psoft-g1-instance{{.Task.Slot}} \
+    --env file.upload-dir=/home/hugoferreiracoelho86/docker/uploads-psoft-g1-instance{{.Task.Slot}} \
     --env spring.rabbitmq.host=rabbitmq \
-    --mount type=bind,source=/home/hugo_hec/docker,target=/tmp/uploads-psoft-g1-instance{{.Task.Slot}} \
+    --mount type=bind,source=/home/hugoferreiracoelho86/docker,target=/tmp/uploads-psoft-g1-instance{{.Task.Slot}} \
     --publish 8085:8080 \
     --network lms_overlay_attachable_network \
     hugocoelhoisep/lmslendings:latest
